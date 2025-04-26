@@ -25,7 +25,7 @@ module m_RF(w_clk, w_ra1, w_ra2, w_rd1, w_rd2, w_wa, w_we, w_wd);
 endmodule
 
 module m_am_imem(w_pc, w_insn);
-    input wire [31:0] w_pc;
+    input  wire [31:0] w_pc;
     output wire [31:0] w_insn;
     reg [31:0] mem [0:63];
     assign w_insn = mem[w_pc[7:2]];
@@ -56,16 +56,17 @@ module m_get_imm(ir, i, s, b, u, j, w_imm);
 endmodule
 
 module m_gen_imm(w_ir, w_imm, w_r, w_i, w_s, w_b, w_u, w_j, w_ld);
-    input wire [31:0] w_ir;
+    input  wire [31:0] w_ir;
     output wire [31:0] w_imm;
     output wire w_r, w_i, w_s, w_b, w_u, w_j, w_ld;
     m_get_type m1 (w_ir[6:2], w_r, w_i, w_s, w_b, w_u, w_j);
-    m_get_imm m2(w_ir, w_i, w_s, w_b, w_u, w_j, w_imm);
+    m_get_imm m2 (w_ir, w_i, w_s, w_b, w_u, w_j, w_imm);
+    assign w_ld = (w_ir[6:2]==0);
 endmodule
 
 module m_am_dmem(w_clk, w_adr, w_we, w_wd, w_rd);
-    input wire w_clk, w_we;
-    input wire [31:0] w_adr, w_wd;
+    input  wire w_clk, w_we;
+    input  wire [31:0] w_adr, w_wd;
     output wire [31:0] w_rd;
     reg [31:0] mem [0:63];
     assign w_rd = mem[w_adr[7:2]];
@@ -75,27 +76,28 @@ endmodule
 
 module m_proc4(w_clk);
     input wire w_clk;
-    wire[31:0] w_npc, w_ir, w_r1, w_r2, w_alu, w_imm, w_s2, w_ldd, w_rt;
+    wire [31:0] w_npc, w_ir, w_imm, w_r1, w_r2, w_s2, w_rt;
+    wire [31:0] w_alu, w_ldd;
+    reg [31:0] r_pc = 0;
     wire w_r, w_i, w_s, w_b, w_u, w_j, w_ld;
-    reg[31:0] r_pc = 0;
-    m_adder m2(r_pc, 32'h4, w_npc);
-    m_am_imem m3(r_pc, w_ir);
-    m_gen_imm m4(w_ir, w_imm, w_r, w_i, w_s, w_b, w_u, w_j, w_ld);
-    m_RF m5(w_clk, w_ir[19:15], w_ir[24:20], w_r1, w_r2, w_ir[11:7], !w_s, w_rt);
-    m_mux m6(w_r2, w_imm, !w_r, w_s2);
-    m_adder m7(w_r1, w_s2, w_alu);
-    m_am_dmem m8(w_clk, w_alu, w_s, w_r2, w_ldd);
-    m_mux m9(w_alu, w_ldd, w_ld, w_rt);
+    m_adder m2 (32'h4, r_pc, w_npc);
+    m_am_imem m3 (r_pc, w_ir);
+    m_gen_imm m4 (w_ir, w_imm, w_r, w_i, w_s, w_b, w_u, w_j, w_ld);
+    m_RF m5 (w_clk, w_ir[19:15], w_ir[24:20], w_r1, w_r2, w_ir[11:7], !w_s, w_rt);
+    m_mux m6 (w_r2, w_imm, !w_r, w_s2);
+    m_adder m7 (w_r1, w_s2, w_alu);
+    m_am_dmem m8 (w_clk, w_alu, w_s, w_r2, w_ldd);
+    m_mux m9 (w_alu, w_ldd, w_ld, w_rt);
     always @(posedge w_clk) r_pc <= w_npc;
 endmodule
 
 module m_top();
     reg r_clk=0; initial #150 forever #50 r_clk = ~r_clk;
-    m_proc4 m(r_clk);
+    m_proc4 m (r_clk);
     initial begin
-        m.m3.mem[0] = {12'd7, 5'd0, 3'd0, 5'd1, 7'h13};
-        m.m3.mem[1] = {7'd0, 5'd1, 5'd0, 3'h2, 5'd8, 7'h23};
-        m.m3.mem[2] = {12'd8, 5'd0, 3'b010, 5'd2, 7'h3};
+        m.m3.mem[0]={12'd7,5'd0,3'd0,5'd1,7'h13};     // addi x1,x0,7
+        m.m3.mem[1]={7'd0,5'd1,5'd0,3'h2,5'd8,7'h23}; // sw x1, 8(x0)
+        m.m3.mem[2]={12'd8,5'd0,3'b010,5'd2,7'h3};    // lw x2, 8(x0)
     end
     initial #99 forever #100 $display("%3d %d %d %d", $time, m.w_r1, m.w_s2, m.w_rt);
     initial #400 $finish;
