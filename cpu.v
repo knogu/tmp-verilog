@@ -82,26 +82,6 @@ module m_am_dmem(w_clk, w_adr, w_we, w_wd, w_rd);
     integer i; initial for (i=0; i<64; i=i+1) mem[i] = 32'd0;
 endmodule
 
-// module m_proc5(w_clk);
-//     input wire w_clk;
-//     wire [31:0] w_npc, w_ir, w_imm, w_r1, w_r2, w_s2, w_rt;
-//     wire [31:0] w_alu, w_ldd, w_tpc, w_pcin;
-//     reg [31:0] r_pc = 0;
-//     wire w_r, w_i, w_s, w_b, w_u, w_j, w_ld, w_tkn;
-//     m_mux m11(w_npc, w_npc, w_b & w_tkn, w_pcin);
-//     m_adder m2 (32'h4, r_pc, w_npc);
-//     m_am_imem m3 (r_pc, w_ir);
-//     m_gen_imm m4 (w_ir, w_imm, w_r, w_i, w_s, w_b, w_u, w_j, w_ld);
-//     m_RF m5 (w_clk, w_ir[19:15], w_ir[24:20], w_r1, w_r2, w_ir[11:7], !w_s & !w_b, w_rt);
-//     m_adder m6 (w_imm, r_pc, w_tpc);
-//     m_mux m7 (w_r2, w_imm, !w_r, w_s2);
-//     m_alu m8 (w_r1, w_s2, w_alu, w_tkn);
-//     m_am_dmem m9 (w_clk, w_alu, w_s, w_r2, w_ldd);
-//     m_mux m10 (w_alu, w_ldd, w_ld, w_rt);
-//     always @(posedge w_clk) r_pc <= w_npc;
-//     wire w_halt = (!w_s & !w_b & w_ir[11:7] == 5'd30);
-// endmodule
-
 module m_proc(w_clk);
     input wire w_clk;
     
@@ -114,9 +94,14 @@ module m_proc(w_clk);
     // Instruction decode
     wire[31:0] w_rs1_val, w_rs2_val, w_wbdata;
     m_RF m_RF_(w_clk, w_inst[19:15], w_inst[24:20], w_rs1_val, w_rs2_val, w_inst[11:7], 1'b1, w_wbdata);
+    wire w_r, w_i, w_s, w_b, w_u, w_j, w_ld;
+    wire[31:0] w_imm;
+    m_gen_imm m_gen_imm_(w_inst, w_imm, w_r, w_i, w_s, w_b, w_u, w_j, w_ld);
+    wire[31:0] w_second_operand;
+    m_mux m_second_oprand_chooser(w_rs2_val, w_imm, w_i, w_second_operand);
 
     // Execution
-    m_adder m_ex(w_rs1_val, w_rs2_val, w_wbdata);
+    m_adder m_ex(w_rs1_val, w_second_operand, w_wbdata);
 
     always @(posedge w_clk) r_pc <= w_npc;
 endmodule
@@ -124,15 +109,11 @@ endmodule
 module m_top();
   reg r_clk=0; initial #150 forever #50 r_clk = ~r_clk;
   m_proc m (r_clk);
-  initial m.m_RF_.mem[1] = 5;
-  initial m.m_RF_.mem[2] = 6;
-  initial m.m_RF_.mem[3] = 7;
-  initial m.m_RF_.mem[4] = 8;
   initial begin
     `define MM m.m_insts_memory.mem
     `include "asm.txt"
   end
-  initial #99 forever #100 $display("time: %3d rs1_val: %5d rs2_val: %5d wbdata: %5d",
-    $time, m.w_rs1_val, m.w_rs2_val, m.w_wbdata);
+  initial #99 forever #100 $display("time: %3d rs1_val: %5d 2nd operand: %5d wbdata: %5d",
+    $time, m.w_rs1_val, m.w_second_operand, m.w_wbdata);
   initial #400 $finish;
 endmodule
