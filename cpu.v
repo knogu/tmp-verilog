@@ -32,13 +32,12 @@ module m_RF(w_clk, w_ra1, w_ra2, w_rd1, w_rd2, w_wa, w_we, w_wd);
     integer i; initial for (i=0; i<32; i=i+1) mem[i] = 0;
 endmodule
 
-module m_am_imem(w_adr, w_ir);
-  input  wire [31:0] w_adr;
-  output wire [31:0] w_ir;
-  assign w_ir =
-    (w_adr==0) ? {7'd0,5'd2,5'd1,3'd0,5'd5,7'h33} : // add x5,x1,x2
-    (w_adr==4) ? {7'd0,5'd4,5'd3,3'd0,5'd6,7'h33} : // add x6,x3,x4
-                 {7'd0,5'd6,5'd5,3'd0,5'd7,7'h33};  // add x7,x5,x6
+module m_am_imem(w_pc, w_inst);
+  input  wire [31:0] w_pc;
+  output wire [31:0] w_inst;
+  reg[31:0] mem[0:63];
+  assign w_inst = mem[w_pc[7:2]];
+  integer i; initial for (i=0; i<64; i=i+1) mem[i] = 32'd0;
 endmodule
 
 module m_get_type(opcode5, r, i, s, b, u, j);
@@ -129,6 +128,11 @@ module m_top();
   initial m.m_RF_.mem[2] = 6;
   initial m.m_RF_.mem[3] = 7;
   initial m.m_RF_.mem[4] = 8;
+  initial begin
+    m.m_insts_memory.mem[0]={7'd0,5'd2,5'd1,3'd0,5'd5,7'h33}; // add x5,x1,x2
+    m.m_insts_memory.mem[1]={7'd0,5'd4,5'd3,3'd0,5'd6,7'h33}; // add x6,x3,x4
+    m.m_insts_memory.mem[2]={7'd0,5'd6,5'd5,3'd0,5'd7,7'h33}; // addi x3,x2,5
+  end
   initial #99 forever #100 $display("%3d %d %d %d",
     $time, m.w_rd1, m.w_rd2, m.w_wbdata);
   initial #400 $finish;
