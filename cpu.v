@@ -4,12 +4,12 @@ module m_adder(w_in1, w_in2, w_out);
     assign w_out = w_in1 + w_in2;
 endmodule
 
-module m_alu(w_in1, w_in2, w_out, w_tkn);
+module m_alu(w_in1, w_in2, w_out, w_is_pc_branched);
     input wire [31:0] w_in1, w_in2;
     output wire [31:0] w_out;
-    output wire w_tkn;
+    output wire w_is_pc_branched;
     assign w_out = w_in1 + w_in2;
-    assign w_tkn = w_in1 != w_in2;
+    assign w_is_pc_branched = w_in1 != w_in2;
 endmodule
 
 module m_mux(w_in1, w_in2, w_sel, w_out);
@@ -86,22 +86,25 @@ module m_proc(w_clk);
     input wire w_clk;
     
     // Instruction Fetch
-    wire[31:0] w_npc, w_inst;
+    wire[31:0] w_pc_incr, w_inst, w_branched_pc, w_next_pc;
     reg[31:0] r_pc = 0;
-    m_adder m_adder_pc(r_pc, 32'h4, w_npc);
+    wire w_is_pc_branched;
+    m_adder m_adder_incr_pc(r_pc, 32'h4, w_pc_incr);
+    m_adder m_adder_branched_pc(r_pc, w_imm, w_branched_pc);
+    m_mux m_next_pc_chooser(w_pc_incr, w_branched_pc, w_b & w_is_pc_branched, w_next_pc);
     m_am_imem m_insts_memory(r_pc, w_inst);
 
     // Instruction decode
     wire[31:0] w_rs1_val, w_rs2_val, w_wbdata, w_alu_out, w_memory_out;
-    m_RF m_RF_(w_clk, w_inst[19:15], w_inst[24:20], w_rs1_val, w_rs2_val, w_inst[11:7], !w_s, w_wbdata);
+    m_RF m_RF_(w_clk, w_inst[19:15], w_inst[24:20], w_rs1_val, w_rs2_val, w_inst[11:7], !w_s & !w_b, w_wbdata);
     wire w_r, w_i, w_s, w_b, w_u, w_j, w_is_ld;
     wire[31:0] w_imm;
     m_gen_imm m_gen_imm_(w_inst, w_imm, w_r, w_i, w_s, w_b, w_u, w_j, w_is_ld);
     wire[31:0] w_second_operand;
-    m_mux m_second_oprand_chooser(w_rs2_val, w_imm, !w_r, w_second_operand);
+    m_mux m_second_oprand_chooser(w_rs2_val, w_imm, !w_r & !w_b, w_second_operand);
 
     // Execution
-    m_adder m_ex(w_rs1_val, w_second_operand, w_alu_out);
+    m_alu m_ex(w_rs1_val, w_second_operand, w_alu_out, w_is_pc_branched);
 
     // Memory Access
     m_data_memory m_data_memory_(w_clk, w_alu_out, w_s, w_rs2_val, w_memory_out);
@@ -109,7 +112,7 @@ module m_proc(w_clk);
     // Write Back
     m_mux m_wbdata_chooser(w_alu_out, w_memory_out, w_is_ld, w_wbdata);
 
-    always @(posedge w_clk) r_pc <= w_npc;
+    always @(posedge w_clk) r_pc <= w_next_pc;
 endmodule
 
 module m_top();
@@ -124,13 +127,15 @@ module m_top();
         forever begin
             #100;
             $display("time:        %5d ", $time);
+            $display("pc:          %h ", m.r_pc);
             // ID
+            $display("// ID");
             $display("rd:          %5d ", m.w_inst[11:7]);
             $display("rs1:         %5d ", m.w_inst[19:15]);
             $display("rs1_val:     %5d ", m.w_rs1_val);
             $display("rs2:         %5d ", m.w_inst[24:20]);
             $display("rs2_val:     %5d ", m.w_rs2_val);
-            $display("imm:         %5d ", m.w_imm);
+            $display("imm:         %h ", m.w_imm);
             $display("2nd operand: %5d", m.w_second_operand);
             $display("is_ld:       %5d", m.w_is_ld);
 
@@ -143,5 +148,5 @@ module m_top();
             $display("\n");
         end
     end
-    initial #400 $finish;
+    initial #1400 $finish;
 endmodule
