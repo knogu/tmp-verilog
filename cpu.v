@@ -19,16 +19,16 @@ module m_mux(w_in1, w_in2, w_sel, w_out);
     assign w_out = (w_sel) ? w_in2 : w_in1;
 endmodule
 
-module m_RF(w_clk, w_ra1, w_ra2, w_rd1, w_rd2, w_wa, w_we, w_wd);
-    input wire w_clk, w_we;
-    input wire [4:0] w_ra1, w_ra2, w_wa;
-    output wire [31:0] w_rd1, w_rd2;
-    input wire [31:0] w_wd;
+module m_RF(w_clk, w_rs1, w_rs2, w_rs1_val, w_rs2_val, w_rd_idx, w_reg_is_written, w_wb_data);
+    input wire w_clk, w_reg_is_written;
+    input wire [4:0] w_rs1, w_rs2, w_rd_idx;
+    output wire [31:0] w_rs1_val, w_rs2_val;
+    input wire [31:0] w_wb_data;
     reg [31:0] mem [0:31];
-    assign w_rd1 = (w_ra1 == 5'd0) ? 32'd0 : mem[w_ra1];
-    assign w_rd2 = (w_ra2 == 5'd0) ? 32'd0 : mem[w_ra2];
-    always @(posedge w_clk) if (w_we) mem[w_wa] = w_wd;
-    always @(posedge w_clk) if (w_we & w_wa == 5'd30) $finish;
+    assign w_rs1_val = (w_rs1 == 5'd0) ? 32'd0 : mem[w_rs1];
+    assign w_rs2_val = (w_rs2 == 5'd0) ? 32'd0 : mem[w_rs2];
+    always @(posedge w_clk) if (w_reg_is_written) mem[w_rd_idx] = w_wb_data;
+    always @(posedge w_clk) if (w_reg_is_written & w_rd_idx == 5'd30) $finish;
     integer i; initial for (i=0; i<32; i=i+1) mem[i] = 0;
 endmodule
 
@@ -112,11 +112,11 @@ module m_proc(w_clk);
     m_am_imem m_insts_memory(r_pc, w_inst);
 
     // Instruction decode
-    wire[31:0] w_rd1, w_rd2, w_wbdata;
-    m_RF m_RF_(w_clk, w_inst[19:15], w_inst[24:20], w_rd1, w_rd2, w_inst[11:7], 1'b1, w_wbdata);
+    wire[31:0] w_rs1_val, w_rs2_val, w_wbdata;
+    m_RF m_RF_(w_clk, w_inst[19:15], w_inst[24:20], w_rs1_val, w_rs2_val, w_inst[11:7], 1'b1, w_wbdata);
 
     // Execution
-    m_adder m_ex(w_rd1, w_rd2, w_wbdata);
+    m_adder m_ex(w_rs1_val, w_rs2_val, w_wbdata);
 
     always @(posedge w_clk) r_pc <= w_npc;
 endmodule
@@ -132,7 +132,7 @@ module m_top();
     `define MM m.m_insts_memory.mem
     `include "asm.txt"
   end
-  initial #99 forever #100 $display("%3d %d %d %d",
-    $time, m.w_rd1, m.w_rd2, m.w_wbdata);
+  initial #99 forever #100 $display("time: %3d rs1_val: %5d rs2_val: %5d wbdata: %5d",
+    $time, m.w_rs1_val, m.w_rs2_val, m.w_wbdata);
   initial #400 $finish;
 endmodule
