@@ -63,22 +63,22 @@ module m_get_imm(ir, i, s, b, u, j, w_imm);
                    0;
 endmodule
 
-module m_gen_imm(w_ir, w_imm, w_r, w_i, w_s, w_b, w_u, w_j, w_ld);
+module m_gen_imm(w_ir, w_imm, w_r, w_i, w_s, w_b, w_u, w_j, w_is_ld);
     input  wire [31:0] w_ir;
     output wire [31:0] w_imm;
-    output wire w_r, w_i, w_s, w_b, w_u, w_j, w_ld;
+    output wire w_r, w_i, w_s, w_b, w_u, w_j, w_is_ld;
     m_get_type m1 (w_ir[6:2], w_r, w_i, w_s, w_b, w_u, w_j);
     m_get_imm m2 (w_ir, w_i, w_s, w_b, w_u, w_j, w_imm);
-    assign w_ld = (w_ir[6:2]==0);
+    assign w_is_ld = (w_ir[6:2]==0);
 endmodule
 
-module m_am_dmem(w_clk, w_adr, w_we, w_wd, w_rd);
-    input  wire w_clk, w_we;
-    input  wire [31:0] w_adr, w_wd;
-    output wire [31:0] w_rd;
+module m_data_memory(w_clk, w_addr, w_write_enabled, w_write_data, w_mem_output);
+    input  wire w_clk, w_write_enabled;
+    input  wire [31:0] w_addr, w_write_data;
+    output wire [31:0] w_mem_output;
     reg [31:0] mem [0:63];
-    assign w_rd = mem[w_adr[7:2]];
-    always @(posedge w_clk) if (w_we) mem[w_adr[7:2]] <= w_wd;
+    assign w_mem_output = mem[w_addr[7:2]];
+    always @(posedge w_clk) if (w_write_enabled) mem[w_addr[7:2]] <= w_write_data;
     integer i; initial for (i=0; i<64; i=i+1) mem[i] = 32'd0;
 endmodule
 
@@ -92,16 +92,22 @@ module m_proc(w_clk);
     m_am_imem m_insts_memory(r_pc, w_inst);
 
     // Instruction decode
-    wire[31:0] w_rs1_val, w_rs2_val, w_wbdata;
-    m_RF m_RF_(w_clk, w_inst[19:15], w_inst[24:20], w_rs1_val, w_rs2_val, w_inst[11:7], 1'b1, w_wbdata);
-    wire w_r, w_i, w_s, w_b, w_u, w_j, w_ld;
+    wire[31:0] w_rs1_val, w_rs2_val, w_wbdata, w_alu_out, w_memory_out;
+    m_RF m_RF_(w_clk, w_inst[19:15], w_inst[24:20], w_rs1_val, w_rs2_val, w_inst[11:7], !w_s, w_wbdata);
+    wire w_r, w_i, w_s, w_b, w_u, w_j, w_is_ld;
     wire[31:0] w_imm;
-    m_gen_imm m_gen_imm_(w_inst, w_imm, w_r, w_i, w_s, w_b, w_u, w_j, w_ld);
+    m_gen_imm m_gen_imm_(w_inst, w_imm, w_r, w_i, w_s, w_b, w_u, w_j, w_is_ld);
     wire[31:0] w_second_operand;
-    m_mux m_second_oprand_chooser(w_rs2_val, w_imm, w_i, w_second_operand);
+    m_mux m_second_oprand_chooser(w_rs2_val, w_imm, !w_r, w_second_operand);
 
     // Execution
-    m_adder m_ex(w_rs1_val, w_second_operand, w_wbdata);
+    m_adder m_ex(w_rs1_val, w_second_operand, w_alu_out);
+
+    // Memory Access
+    m_data_memory m_data_memory_(w_clk, w_alu_out, w_s, w_rs2_val, w_memory_out);
+
+    // Write Back
+    m_mux m_wbdata_chooser(w_alu_out, w_memory_out, w_is_ld, w_wbdata);
 
     always @(posedge w_clk) r_pc <= w_npc;
 endmodule
@@ -118,8 +124,21 @@ module m_top();
         forever begin
             #100;
             $display("time:        %5d ", $time);
+            // ID
+            $display("rd:          %5d ", m.w_inst[11:7]);
+            $display("rs1:         %5d ", m.w_inst[19:15]);
             $display("rs1_val:     %5d ", m.w_rs1_val);
+            $display("rs2:         %5d ", m.w_inst[24:20]);
+            $display("rs2_val:     %5d ", m.w_rs2_val);
+            $display("imm:         %5d ", m.w_imm);
             $display("2nd operand: %5d", m.w_second_operand);
+            $display("is_ld:       %5d", m.w_is_ld);
+
+            // EX
+            $display("alu out:     %5d", m.w_alu_out);
+            // MA
+            $display("memory out:  %5d", m.w_memory_out);
+            // WB
             $display("wbdata:      %5d", m.w_wbdata);
             $display("\n");
         end
