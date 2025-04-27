@@ -107,13 +107,22 @@ module m_proc(w_clk);
 endmodule
 
 module m_top();
-  reg r_clk=0; initial #150 forever #50 r_clk = ~r_clk;
-  m_proc m (r_clk);
-  initial begin
-    `define MM m.m_insts_memory.mem
-    `include "asm.txt"
-  end
-  initial #99 forever #100 $display("time: %3d rs1_val: %5d 2nd operand: %5d wbdata: %5d",
-    $time, m.w_rs1_val, m.w_second_operand, m.w_wbdata);
-  initial #400 $finish;
+    reg r_clk=0; initial #150 forever #50 r_clk = ~r_clk;
+    m_proc m (r_clk);
+    initial begin
+        `define MM m.m_insts_memory.mem
+        `include "asm.txt"
+    end
+    initial begin
+        #99;
+        forever begin
+            #100;
+            $display("time:        %5d ", $time);
+            $display("rs1_val:     %5d ", m.w_rs1_val);
+            $display("2nd operand: %5d", m.w_second_operand);
+            $display("wbdata:      %5d", m.w_wbdata);
+            $display("\n");
+        end
+    end
+    initial #400 $finish;
 endmodule
