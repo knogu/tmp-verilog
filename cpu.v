@@ -129,9 +129,8 @@ module m_top();
   initial m.m_RF_.mem[3] = 7;
   initial m.m_RF_.mem[4] = 8;
   initial begin
-    m.m_insts_memory.mem[0]={7'd0,5'd2,5'd1,3'd0,5'd5,7'h33}; // add x5,x1,x2
-    m.m_insts_memory.mem[1]={7'd0,5'd4,5'd3,3'd0,5'd6,7'h33}; // add x6,x3,x4
-    m.m_insts_memory.mem[2]={7'd0,5'd6,5'd5,3'd0,5'd7,7'h33}; // addi x3,x2,5
+    `define MM m.m_insts_memory.mem
+    `include "asm.txt"
   end
   initial #99 forever #100 $display("%3d %d %d %d",
     $time, m.w_rd1, m.w_rd2, m.w_wbdata);
