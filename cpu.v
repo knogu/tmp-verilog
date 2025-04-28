@@ -127,7 +127,7 @@ module m_top();
         forever begin
             #100;
             $display("time:        %5d ", $time);
-            $display("pc:          %h ", m.r_pc);
+            $display("pc:          %5d", m.r_pc);
             // ID
             $display("// ID");
             $display("rd:          %5d ", m.w_inst[11:7]);
@@ -135,17 +135,17 @@ module m_top();
             $display("rs1_val:     %5d ", m.w_rs1_val);
             $display("rs2:         %5d ", m.w_inst[24:20]);
             $display("rs2_val:     %5d ", m.w_rs2_val);
-            $display("imm:         %h ", m.w_imm);
-            $display("2nd operand: %5d", m.w_second_operand);
+            $display("imm:         %5d", m.w_imm);
+            $display("2nd_operand: %5d", m.w_second_operand);
             $display("is_ld:       %5d", m.w_is_ld);
 
             // EX
-            $display("alu out:     %5d", m.w_alu_out);
+            $display("alu_out:     %5d", m.w_alu_out);
             // MA
-            $display("memory out:  %5d", m.w_memory_out);
+            $display("memory_out:  %5d", m.w_memory_out);
             // WB
             $display("wbdata:      %5d", m.w_wbdata);
-            $display("\n");
+            $display("========");
         end
     end
     initial #1400 $finish;
