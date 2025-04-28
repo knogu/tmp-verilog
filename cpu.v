@@ -145,6 +145,10 @@ module m_top();
             $display("memory_out:  %5d", m.w_memory_out);
             // WB
             $display("wbdata:      %5d", m.w_wbdata);
+            // for debug
+            $display("x0:          %5d", m.m_RF_.mem[0]);
+            $display("x1:          %5d", m.m_RF_.mem[1]);
+            $display("x2:          %5d", m.m_RF_.mem[2]);
             $display("========");
         end
     end

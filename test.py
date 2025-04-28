@@ -40,9 +40,22 @@ assertions1 = [
     {"pc": 12, "rs1_val": 10, "2nd_operand": 10},
 ]
 
-scenarios = [(insts1, assertions1)]
+insts2 = [
+    "`MM[0]={12'd7,5'd0,3'd0,5'd1,7'h13};     // addi x1,x0,7",
+    "`MM[1]={7'd0,5'd1,5'd0,3'h2,5'd8,7'h23}; // sw x1, 8(x0)",
+    "`MM[2]={12'd8,5'd0,3'b010,5'd2,7'h3};    // lw x2, 8(x0)",
+]
 
-for insts, assertions in scenarios:
+assertions2 = [
+    {"pc": 0, "rs1_val": 0, "imm": 7, "2nd_operand": 7, "wbdata": 7, "rd": 1},
+    {"pc": 4, "imm": 8, "rs1": 0, "rs2": 1},
+    {"pc": 8, "imm": 8, "rd": 2, "rs1": 0, "wbdata": 7},
+    {"x2": 7}
+]
+
+scenarios = [(insts1, assertions1), (insts2, assertions2)]
+
+for ith, (insts, assertions) in enumerate(scenarios, start=0):
     # Prepare instructions
     with open(os.path.expanduser('asm.txt'), 'w', encoding='utf-8') as f:
         for inst in insts:
@@ -64,4 +77,4 @@ for insts, assertions in scenarios:
                 print("actual: ", status[i][label])
                 exit(1)
 
-    print("succeeded")
+    print(str(ith) + "-th scenario succeeded")
