@@ -4,15 +4,17 @@ module m_adder(w_in1, w_in2, w_out);
     assign w_out = w_in1 + w_in2;
 endmodule
 
-module m_alu(w_in1, w_in2, w_out, w_alu_control, w_alu_zero);
+module m_alu(w_in1, w_in2, w_out, w_alu_control, w_funct3, w_is_branched);
     input wire [31:0] w_in1, w_in2;
-    input wire [2:0] w_alu_control;
+    input wire [2:0] w_alu_control, w_funct3;
     output wire [31:0] w_out;
     assign w_out = (w_alu_control == 3'b000) ? w_in1 + w_in2 :
                    (w_alu_control == 3'b001) ? w_in1 - w_in2 :
                    w_in1; // todo
-    output wire w_alu_zero;
-    assign w_alu_zero = (w_out == 0);
+    output wire w_is_branched;
+    assign w_is_branched = (w_funct3 == 3'b000) ? w_in1 == w_in2 :
+                           (w_funct3 == 3'b001) ? w_in1 != w_in2 :
+                           0;
 endmodule
 
 module m_mux(w_in1, w_in2, w_sel, w_out);
@@ -135,7 +137,7 @@ module m_proc(w_clk);
 
     // Execution
     wire w_alu_zero;
-    m_alu m_ex(w_rs1_val, w_second_operand, w_alu_out, w_alu_control, w_alu_zero);
+    m_alu m_ex(w_rs1_val, w_second_operand, w_alu_out, w_alu_control, w_inst[14:12], w_alu_zero);
 
     // Memory Access
     m_data_memory m_data_memory_(w_clk, w_alu_out, w_s, w_rs2_val, w_memory_out);

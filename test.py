@@ -41,19 +41,35 @@ assertions1 = [
 ]
 
 insts2 = [
+    "`MM[0]={12'd5,5'd0,3'h0,5'd1,7'h13};       //  addi x1,x0,5",
+    "`MM[1]={7'd0,5'd1,5'd1,3'h0,5'd2,7'h33};   //  add  x2,x1,x1",
+    "`MM[2]={12'd1,5'd1,3'd0,5'd1,7'h13};       //L:addi x1,x1,1",
+    "`MM[3]={~7'd0,5'd2,5'd1,3'h0,5'h1d,7'h63}; //  beq  x1,x2,L",
+    "`MM[4]={12'd9,5'd1,3'd0,5'd10,7'h13};      //  addi x10,x1,9"
+]
+
+assertions2 = [
+    {"pc": 0, "rs1_val": 0, "imm": 5, "2nd_operand": 5, "wbdata": 5, "rd": 1},
+    {"pc": 4, "rs1_val": 5, "rs2_val": 5, "2nd_operand": 5, "wbdata": 10, "rd": 2},
+    {"pc": 8, "rs1_val": 5, "imm": 1, "2nd_operand": 1, "wbdata": 6, "rd": 1},
+    {"pc": 12, "rs1_val": 6, "2nd_operand": 10},
+    {"pc": 16}
+]
+
+insts3 = [
     "`MM[0]={12'd7,5'd0,3'd0,5'd1,7'h13};     // addi x1,x0,7",
     "`MM[1]={7'd0,5'd1,5'd0,3'h2,5'd8,7'h23}; // sw x1, 8(x0)",
     "`MM[2]={12'd8,5'd0,3'b010,5'd2,7'h3};    // lw x2, 8(x0)",
 ]
 
-assertions2 = [
+assertions3 = [
     {"pc": 0, "rs1_val": 0, "imm": 7, "2nd_operand": 7, "wbdata": 7, "rd": 1},
     {"pc": 4, "imm": 8, "rs1": 0, "rs2": 1},
     {"pc": 8, "imm": 8, "rd": 2, "rs1": 0, "wbdata": 7},
     {"x2": 7}
 ]
 
-scenarios = [(insts1, assertions1), (insts2, assertions2)]
+scenarios = [(insts1, assertions1), (insts2, assertions2), (insts3, assertions3)]
 
 for ith, (insts, assertions) in enumerate(scenarios, start=0):
     # Prepare instructions
