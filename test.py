@@ -77,7 +77,7 @@ insts4 = [
 
 assertions4 = [
     {"pc": 0},
-    {"pc": 8},
+    {"pc": 8, "x1": 4},
 ]
 
 scenarios = [(insts1, assertions1), (insts2, assertions2), (insts3, assertions3), (insts4, assertions4)]

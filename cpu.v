@@ -24,6 +24,16 @@ module m_mux(w_in1, w_in2, w_sel, w_out);
     assign w_out = (w_sel) ? w_in2 : w_in1;
 endmodule
 
+module m_mux_2bit(w_in1, w_in2, w_in3, w_sel, w_out);
+    input wire [31:0] w_in1, w_in2, w_in3;
+    input wire [1:0] w_sel;
+    output wire [31:0] w_out;
+    assign w_out = (w_sel == 2'b00) ? w_in1 :
+                   (w_sel[0] == 1) ? w_in2 :
+                   (w_sel[1] == 1) ? w_in3 :
+                   w_in1;
+endmodule
+
 module m_RF(w_clk, w_rs1, w_rs2, w_rs1_val, w_rs2_val, w_rd_idx, w_reg_is_written, w_wb_data);
     input wire w_clk, w_reg_is_written;
     input wire [4:0] w_rs1, w_rs2, w_rd_idx;
@@ -143,7 +153,7 @@ module m_proc(w_clk);
     m_data_memory m_data_memory_(w_clk, w_alu_out, w_s, w_rs2_val, w_memory_out);
 
     // Write Back
-    m_mux m_wbdata_chooser(w_alu_out, w_memory_out, w_is_ld, w_wbdata);
+    m_mux_2bit m_wbdata_chooser(w_alu_out, w_memory_out, w_pc_incr, {w_j, w_is_ld}, w_wbdata);
 
     always @(posedge w_clk) r_pc <= w_next_pc;
 endmodule
@@ -172,6 +182,8 @@ module m_top();
             $display("2nd_operand: %5d", m.w_second_operand);
             $display("is_ld:       %5d", m.w_is_ld);
             $display("opcode:      %7b", m.w_inst[6:0]);
+            $display("w_is_j:      %7b", m.w_j);
+            $display("w_is_ld:     %7b", m.w_is_ld);
 
             // EX
             $display("alu_control:  %3b", m.w_alu_control);
