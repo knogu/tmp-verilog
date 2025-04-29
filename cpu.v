@@ -10,6 +10,8 @@ module m_alu(w_in1, w_in2, w_out, w_alu_control, w_funct3, w_is_branched);
     output wire [31:0] w_out;
     assign w_out = (w_alu_control == 3'b000) ? w_in1 + w_in2 :
                    (w_alu_control == 3'b001) ? w_in1 - w_in2 :
+                   (w_alu_control == 3'b011) ? w_in1 | w_in2 :
+                   (w_alu_control == 3'b010) ? w_in1 & w_in2 :
                    w_in1; // todo
     output wire w_is_branched;
     assign w_is_branched = (w_funct3 == 3'b000) ? w_in1 == w_in2 :

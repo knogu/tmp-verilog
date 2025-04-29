@@ -17,7 +17,7 @@ def collect_status(result: list):
     return all_states
 
 
-insts1 = [
+insts0 = [
     "`MM[0]={12'd5,5'd0,3'h0,5'd1,7'h13};       //  addi x1,x0,5",
     "`MM[1]={7'd0,5'd1,5'd1,3'h0,5'd2,7'h33};   //  add  x2,x1,x1",
     "`MM[2]={12'd1,5'd1,3'd0,5'd1,7'h13};       //L:addi x1,x1,1",
@@ -25,7 +25,7 @@ insts1 = [
     "`MM[4]={12'd9,5'd1,3'd0,5'd10,7'h13};      //  addi x10,x1,9"
 ]
 
-assertions1 = [
+assertions0 = [
     {"pc": 0, "rs1_val": 0, "imm": 5, "2nd_operand": 5, "wbdata": 5, "rd": 1},
     {"pc": 4, "rs1_val": 5, "rs2_val": 5, "2nd_operand": 5, "wbdata": 10, "rd": 2},
     {"pc": 8, "rs1_val": 5, "imm": 1, "2nd_operand": 1, "wbdata": 6, "rd": 1},
@@ -40,7 +40,7 @@ assertions1 = [
     {"pc": 12, "rs1_val": 10, "2nd_operand": 10},
 ]
 
-insts2 = [
+insts1 = [
     "`MM[0]={12'd5,5'd0,3'h0,5'd1,7'h13};       //  addi x1,x0,5",
     "`MM[1]={7'd0,5'd1,5'd1,3'h0,5'd2,7'h33};   //  add  x2,x1,x1",
     "`MM[2]={12'd1,5'd1,3'd0,5'd1,7'h13};       //L:addi x1,x1,1",
@@ -48,7 +48,7 @@ insts2 = [
     "`MM[4]={12'd9,5'd1,3'd0,5'd10,7'h13};      //  addi x10,x1,9"
 ]
 
-assertions2 = [
+assertions1 = [
     {"pc": 0, "rs1_val": 0, "imm": 5, "2nd_operand": 5, "wbdata": 5, "rd": 1},
     {"pc": 4, "rs1_val": 5, "rs2_val": 5, "2nd_operand": 5, "wbdata": 10, "rd": 2},
     {"pc": 8, "rs1_val": 5, "imm": 1, "2nd_operand": 1, "wbdata": 6, "rd": 1},
@@ -56,31 +56,48 @@ assertions2 = [
     {"pc": 16}
 ]
 
-insts3 = [
+insts2 = [
     "`MM[0]={12'd7,5'd0,3'd0,5'd1,7'h13};     // addi x1,x0,7",
     "`MM[1]={7'd0,5'd1,5'd0,3'h2,5'd8,7'h23}; // sw x1, 8(x0)",
     "`MM[2]={12'd8,5'd0,3'b010,5'd2,7'h3};    // lw x2, 8(x0)",
 ]
 
-assertions3 = [
+assertions2 = [
     {"pc": 0, "rs1_val": 0, "imm": 7, "2nd_operand": 7, "wbdata": 7, "rd": 1},
     {"pc": 4, "imm": 8, "rs1": 0, "rs2": 1},
     {"pc": 8, "imm": 8, "rd": 2, "rs1": 0, "wbdata": 7},
     {"x2": 7}
 ]
 
-insts4 = [
+insts3 = [
     "`MM[0]={1'b0,10'b0000000100,1'b0,8'b00000000,5'd1,7'b1101111};     // jal 8",
     "`MM[1]={12'd7,5'd0,3'd0,5'd1,7'h13};     // addi x1,x0,7",
     "`MM[2]={12'd7,5'd0,3'd0,5'd1,7'h13};     // addi x1,x0,7",
 ]
 
-assertions4 = [
+assertions3 = [
     {"pc": 0},
     {"pc": 8, "x1": 4},
 ]
 
-scenarios = [(insts1, assertions1), (insts2, assertions2), (insts3, assertions3), (insts4, assertions4)]
+insts4 = [
+    "`MM[0]={12'd7,5'd0,3'd0,5'd1,7'h13};     // addi x1, x0, 7",
+    "`MM[1]={7'd0,5'd0,5'd1,3'b110,5'b00010,7'b0110011}; // or   x2, x1, x0",
+    "`MM[2]={7'd0,5'd0,5'd1,3'b111,5'b00010,7'b0110011}; // and  x2, x1, x0",
+    "`MM[3]={12'b000000000111, 5'b00001, 3'b111, 5'b00010, 7'b0010011}; // andi  x2, x1, 7",
+    "`MM[4]={12'b000000000111, 5'b00001, 3'b110, 5'b00010, 7'b0010011}; // ori  x2, x0, 7",
+]
+
+assertions4 = [
+    {"pc": 0},
+    {"pc": 4, "x1": 7},
+    {"pc": 8, "x2": 7, "x1": 7},
+    {"pc": 12, "x2": 0},
+    {"pc": 16, "x2": 7},
+    {"pc": 20, "x2": 7},
+]
+
+scenarios = [(insts0, assertions0), (insts1, assertions1), (insts2, assertions2), (insts3, assertions3), (insts4, assertions4)]
 
 for ith, (insts, assertions) in enumerate(scenarios, start=0):
     # Prepare instructions
