@@ -69,7 +69,7 @@ for ith, (insts, assertions) in enumerate(scenarios, start=0):
     for i, assertion in enumerate(assertions):
         for label, val in assertion.items():
             if status[i][label] != val:
-                print("Assertion failed.")
+                print("Assertion failed in " + str(ith) + "-th scenario")
                 print("actual PC: " + str(status[i]["pc"]))
                 print("assertion index: " + str(i))
                 print(label)
