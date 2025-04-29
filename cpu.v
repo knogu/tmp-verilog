@@ -115,11 +115,11 @@ module m_proc(w_clk);
     input wire w_clk;
     
     // Instruction Fetch
-    wire[31:0] w_pc_incr, w_inst, w_branched_pc, w_next_pc;
+    wire[31:0] w_pc_incr, w_inst, w_br_or_jmp_pc, w_next_pc;
     reg[31:0] r_pc = 0;
     m_adder m_adder_incr_pc(r_pc, 32'h4, w_pc_incr);
-    m_adder m_adder_branched_pc(r_pc, w_imm, w_branched_pc);
-    m_mux m_next_pc_chooser(w_pc_incr, w_branched_pc, w_b & w_alu_zero, w_next_pc);
+    m_adder m_adder_branched_pc(r_pc, w_imm, w_br_or_jmp_pc);
+    m_mux m_next_pc_chooser(w_pc_incr, w_br_or_jmp_pc, (w_j | w_b & w_alu_zero), w_next_pc); // todo
     m_am_imem m_insts_memory(r_pc, w_inst);
 
     // Instruction decode

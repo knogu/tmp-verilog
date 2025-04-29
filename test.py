@@ -69,7 +69,18 @@ assertions3 = [
     {"x2": 7}
 ]
 
-scenarios = [(insts1, assertions1), (insts2, assertions2), (insts3, assertions3)]
+insts4 = [
+    "`MM[0]={1'b0,10'b0000000100,1'b0,8'b00000000,5'd1,7'b1101111};     // jal 8",
+    "`MM[1]={12'd7,5'd0,3'd0,5'd1,7'h13};     // addi x1,x0,7",
+    "`MM[2]={12'd7,5'd0,3'd0,5'd1,7'h13};     // addi x1,x0,7",
+]
+
+assertions4 = [
+    {"pc": 0},
+    {"pc": 8},
+]
+
+scenarios = [(insts1, assertions1), (insts2, assertions2), (insts3, assertions3), (insts4, assertions4)]
 
 for ith, (insts, assertions) in enumerate(scenarios, start=0):
     # Prepare instructions
