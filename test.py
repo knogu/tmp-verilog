@@ -97,9 +97,34 @@ assertions4 = [
     {"pc": 20, "x2": 7},
 ]
 
-scenarios = [(insts0, assertions0), (insts1, assertions1), (insts2, assertions2), (insts3, assertions3), (insts4, assertions4)]
+insts5 = [
+    "`MM[0]={20'b11111111111111111111,5'd1,7'b0110111}; // lui x1, 1048575",
+]
+
+assertions5 = [
+    {"pc": 0, "w_is_u": 1, "imm": 4294963200},
+    {"pc": 4, "x1": 4294963200}
+]
+
+insts6 = [
+    "`MM[0]={20'b11111111111111111111,5'd1,7'b0010111}; // auipc x1, 1048575",
+    "`MM[1]={20'b11111111111111111111,5'd1,7'b0010111}; // auipc x1, 1048575",
+]
+
+assertions6 = [
+    {"pc": 0, "w_is_u": 1},
+    {"pc": 4, "x1": 4294963200},
+    {"pc": 8, "x1": 4294963204},
+]
+
+scenarios = [(insts0, assertions0), (insts1, assertions1), (insts2, assertions2), (insts3, assertions3), (insts4, assertions4),
+             (insts5, assertions5), (insts6, assertions6)]
 
 for ith, (insts, assertions) in enumerate(scenarios, start=0):
+    for j, inst in enumerate(insts):
+        if not "[" + str(j) + "]" in inst:
+            print("check " + str(ith) + "-th inst: " + inst)
+            exit(2)
     # Prepare instructions
     with open(os.path.expanduser('asm.txt'), 'w', encoding='utf-8') as f:
         for inst in insts:

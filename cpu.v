@@ -12,6 +12,7 @@ module m_alu(w_in1, w_in2, w_out, w_alu_control, w_funct3, w_is_branched);
                    (w_alu_control == 3'b001) ? w_in1 - w_in2 :
                    (w_alu_control == 3'b011) ? w_in1 | w_in2 :
                    (w_alu_control == 3'b010) ? w_in1 & w_in2 :
+                   (w_alu_control == 3'b100) ? w_in2:
                    w_in1; // todo
     output wire w_is_branched;
     assign w_is_branched = (w_funct3 == 3'b000) ? w_in1 == w_in2 :
@@ -26,14 +27,14 @@ module m_mux(w_in1, w_in2, w_sel, w_out);
     assign w_out = (w_sel) ? w_in2 : w_in1;
 endmodule
 
-module m_mux_2bit(w_in1, w_in2, w_in3, w_sel, w_out);
-    input wire [31:0] w_in1, w_in2, w_in3;
+module m_mux_2bit(w_in1, w_in2, w_in3, w_in4, w_sel, w_out);
+    input wire [31:0] w_in1, w_in2, w_in3, w_in4;
     input wire [1:0] w_sel;
     output wire [31:0] w_out;
     assign w_out = (w_sel == 2'b00) ? w_in1 :
-                   (w_sel[0] == 1) ? w_in2 :
-                   (w_sel[1] == 1) ? w_in3 :
-                   w_in1;
+                   (w_sel == 2'b01) ? w_in2 :
+                   (w_sel == 2'b10) ? w_in3 :
+                   w_in4;
 endmodule
 
 module m_RF(w_clk, w_rs1, w_rs2, w_rs1_val, w_rs2_val, w_rd_idx, w_reg_is_written, w_wb_data);
@@ -114,7 +115,8 @@ module alu_decoder(w_alu_op, w_funct3, w_opcode, w_funct7, w_alu_control);
     input wire [6:0] w_opcode;
     input wire [6:0] w_funct7;
     output wire [2:0] w_alu_control;
-    assign w_alu_control = (w_alu_op == 2'b00) ? 3'b000 : // add for lw,sw
+    assign w_alu_control = (w_opcode == 7'b0110111) ? 3'b100 : // lui
+                           (w_alu_op == 2'b00) ? 3'b000 : // add for lw,sw
                            (w_alu_op == 2'b01) ? 3'b001 : // subtract for beq
                            (w_funct3 == 3'b000 & w_opcode[5] == 1'b1 & w_funct7[5] == 1'b1) ? 3'b001 : // subtract TODO: w_opcode[5]の値が正しくない？
                            (w_funct3 == 3'b010) ? 3'b101 : // set less than
@@ -127,11 +129,11 @@ module m_proc(w_clk);
     input wire w_clk;
     
     // Instruction Fetch
-    wire[31:0] w_pc_incr, w_inst, w_br_or_jmp_pc, w_next_pc;
+    wire[31:0] w_pc_incr, w_inst, w_pc_plus_imm, w_next_pc;
     reg[31:0] r_pc = 0;
     m_adder m_adder_incr_pc(r_pc, 32'h4, w_pc_incr);
-    m_adder m_adder_branched_pc(r_pc, w_imm, w_br_or_jmp_pc);
-    m_mux m_next_pc_chooser(w_pc_incr, w_br_or_jmp_pc, (w_j | w_b & w_alu_zero), w_next_pc); // todo
+    m_adder m_adder_pc_imm(r_pc, w_imm, w_pc_plus_imm);
+    m_mux m_next_pc_chooser(w_pc_incr, w_pc_plus_imm, (w_j | w_b & w_alu_zero), w_next_pc); // todo
     m_am_imem m_insts_memory(r_pc, w_inst);
 
     // Instruction decode
@@ -155,7 +157,11 @@ module m_proc(w_clk);
     m_data_memory m_data_memory_(w_clk, w_alu_out, w_s, w_rs2_val, w_memory_out);
 
     // Write Back
-    m_mux_2bit m_wbdata_chooser(w_alu_out, w_memory_out, w_pc_incr, {w_j, w_is_ld}, w_wbdata);
+    wire[1:0] chooser_bits = w_j ? 2'b10 :
+                            w_is_ld ? 2'b01 :
+                            w_inst[6:0] == 7'b0010111 ? 2'b11 :
+                            0;
+    m_mux_2bit m_wbdata_chooser(w_alu_out, w_memory_out, w_pc_incr, w_pc_plus_imm, chooser_bits, w_wbdata); // todo: decide 2bit for mux by main decoder
 
     always @(posedge w_clk) r_pc <= w_next_pc;
 endmodule
@@ -175,17 +181,22 @@ module m_top();
             $display("pc:          %5d", m.r_pc);
             // ID
             $display("// ID");
+            $display("inst:        %b ", m.w_inst);
             $display("rd:          %5d ", m.w_inst[11:7]);
             $display("rs1:         %5d ", m.w_inst[19:15]);
             $display("rs1_val:     %5d ", m.w_rs1_val);
             $display("rs2:         %5d ", m.w_inst[24:20]);
             $display("rs2_val:     %5d ", m.w_rs2_val);
             $display("imm:         %5d", m.w_imm);
+            $display("imm_bin:     %b", m.w_imm);
             $display("2nd_operand: %5d", m.w_second_operand);
             $display("is_ld:       %5d", m.w_is_ld);
             $display("opcode:      %7b", m.w_inst[6:0]);
             $display("w_is_j:      %7b", m.w_j);
+            $display("w_is_u:      %7b", m.w_u);
             $display("w_is_ld:     %7b", m.w_is_ld);
+            $display("w_pc_plus_imm: %d", m.w_pc_plus_imm);
+            $display("chooser_bits:  %2b", m.chooser_bits);
 
             // EX
             $display("alu_control:  %3b", m.w_alu_control);
